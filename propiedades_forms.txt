@@ -1,0 +1,116 @@
+----------------------------------------------------------------------------------------
+-- PROPIEDAD DE FORMS DE ORACLE														  --
+----------------------------------------------------------------------------------------
+**Desactivar Item--Set_item_property('bloque.item', enabled,property_false);
+									
+**Activar Item--Set_item_property('bloque.item', enabled, property_true);									
+
+**No Mostrar--Set_Item_Property('bloque.item', Visible, Property_False);									
+
+**Mostrar--Set_Item_Property('bloque.item', Visible, Property_True);									
+
+**NO Permite Insertar Item--Set_Item_Property('bloque.item', INSERT_ALLOWED, Property_False);									
+
+**Permite Insertar--Set_Item_Property('bloque.item', INSERT_ALLOWED, Property_True);									
+
+**NO Permite Actualizar Item--Set_Item_Property('bloque.item', UPDATE_ALLOWED, Property_False);									
+
+**Permite Actualizar--Set_Item_Property('bloque.item', UPDATE_ALLOWED, Property_True);									
+
+**Permite Asignar un Texto al Prompt--Set_Item_Property('bloque.item', Prompt_Text, 'Texto_Prompt:');									
+
+**Desctivar RadioButon	--Set_radio_button_property('Bloque.NombreItem','NombreRadioButon',enabled,property_False);									
+
+**Activar Canvas	set_view_property('Nombre_Canvas',VISIBLE,property_true);									
+
+**Desactivar Canvas	set_view_property('Nombre_Canvas',VISIBLE,property_false);									
+
+**Nueva Posicion (355,145)	Set_item_Property('bloque.item', position, 355, 145);									
+
+**Cambiar Tamaño Itema 32	Set_item_Property('bloque.item', width, 132);									
+
+**Activar RadioButon	Set_radio_button_property('Bloque.Item','NombreRadioButon',enabled,property_True);									
+
+**Borrar Variables Globales	 Erase('GLOBAL.Item');									
+
+**NO Permite Actualizar Bloque	Set_Block_Property('Bloque', Update_Allowed, Property_False);									
+
+**Permite Actualizar Bloque	Set_Block_Property('Bloque', Update_Allowed, Property_True);									
+
+**Permite Insertar Bloque	Set_Block_Property('PropuestaPrestamo', Insert_Allowed, Property_True);									
+
+**NO Permite Insertar Bloque	Set_Block_Property('PropuestaPrestamo', Insert_Allowed, Property_False);									
+
+**Ejecutar el Trigger	execute_trigger('Nombre_Trigger');									
+
+**Poblar Lista	 x := Populate_group('Nombre_GrupoRegistro'); Populate_List('bloque.item', 'Nombre_GrupoRegistro');									
+
+**Ir al Registro "nRegistro"	Go_Record(nRegistro);									
+
+**Ir a un Item especifico	Go_Item('bloque.item');									
+
+**Hace que mientras carga algo, el cursor cambie a la forma de un reloj	set_application_property(cursor_style, 'default');									
+
+**Condicion para hacer acciones si un objeto esta Desactivado	
+If Get_Item_Property('Bloque.Item',Enabled) = 'FALSE' Then  
+Set_Item_Property('Bloque.Item', Enabled, Property_True);   
+End If;									
+
+**Condicion para hacer acciones si un objeto esta Activado	
+If Get_Item_Property('Bloque.Item',Enabled) = 'TRUE' Then  
+Set_Item_Property('Bloque.Item', Enabled, Property_False);   
+End If;
+						
+**Cambiar de color	Set_Item_Property('IDCODE',Background_Color,'r50g88b0');									
+
+**No mostrar Tab	SET_TAB_PAGE_PROPERTY('Nombre_Tab',visible,property_false);									
+
+**Mostrar Tab	SET_TAB_PAGE_PROPERTY('Nombre_Tab',visible,property_true);									
+
+**Cambiar de Titulo a la Ventana	SET_WINDOW_Property('Nombre_Ventana',title,'Texto_Ventana');									
+
+**Adicionar un elemento de lista	
+Add_List_Element('bloque.item', Tamaño, 'Descripcion del Elemento a mostrar', 'Valor del Elemento');									
+
+**Limpiar Lista ComboBox	Clear_List('bloque.item');									
+
+**Llamar una Lista de Valores en una variable  
+nLov	nLov := Show_Lov('Nombre_Lista_de_Valores');									
+**Colorear un Item de acuerdo a Atributos visuales	Set_Item_Instance_Property( 'Bloque.Item', CURRENT_RECORD, VISUAL_ATTRIBUTE,'Nombre_Atributo');									
+
+**Ir a otro formulario	Open_Form('CRE01550');      Open_Form('CRE01B60', Activate, Session);       Call_Form('CRE01B60', No_Hide);									
+
+**Exception	No_Data_Found,         Too_Many_Rows,         Dup_Val_On_Index,         Others									
+										
+**LIMPIAR CAMPO	:CONTRATO.CUENTABANCO:=NULL;		
+							
+**Llamada a bloque	go_block('block1');    execute_query;									
+
+**Limpiar bloque	  GO_BLOCK('BLOCK0');   CLEAR_BLOCK(NO_VALIDATE); 									
+
+**Salida del bloque por exception	raise form_trigger_failure;									
+	IM$_ALERTAMENSAJES(0,'Error al Grabar');									
+										
+**NECESARIO		SET_ITEM_PROPERTY('CODIGOCENTROCOSTO',REQUIRED,PROPERTY_true);	
+
+**poblar area
+Procedure IM_PoblarArea Is
+ x number;
+
+Begin
+ x := Populate_group('AREA');
+ Populate_List('block3.CodigoArea','AREA');
+End;	
+
+**PROPIEDAD VISUAL,CON ATRIBUTO VISUAL
+SET_ITEM_INSTANCE_PROPERTY('BLOCK1.TTIPOREGISTRO',CURRENT_RECORD,VISUAL_ATTRIBUTE,'PORLIQUIDAR');
+
+**PROPIEDAD DE Bloque
+SET_BLOCK_PROPERTY('block1',DEFAULT_WHERE,'CodigoAgenciaCaja  = '||:block1.CodigoAgenciaCaja||'							
+                            And PeriodoCaja = '||:block1.PeriodoCaja||'							
+                            And NumeroCaja = '||:block1.NumeroCaja);							
+execute_query;							
+
+---
+SET_BLOCK_PROPERTY('BLOCK1',INSERT_ALLOWED, PROPERTY_FALSE);						
+	SET_BLOCK_PROPERTY('BLOCK1',UPDATE_ALLOWED, PROPERTY_FALSE);					

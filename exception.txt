@@ -1,0 +1,39 @@
+**ACCESS_INTO_NULL(-6530)	El programa intentó asignar valores a los atributos de un objeto no inicializado	
+
+**COLLECTION_IS_NULL(-6531) El programa intentó asignar valores a una tabla anidada aún no inicializada	
+
+**CURSOR_ALREADY_OPEN(-6511) El programa intentó abrir un cursor que ya se encontraba abierto. Recuerde que un cursor de ciclo FOR automáticamente lo abre y ello no se debe especificar con la sentencia OPEN	
+
+**DUP_VAL_ON_INDEX(-1) El programa intentó almacenar valores duplicados en una columna que se mantiene con restricción de integridad de un índice único (unique index)
+
+**INVALID_CURSOR(-1001) El programa intentó efectuar una operación no válida sobre un cursor
+
+**INVALID_NUMBER(-1722) En una sentencia SQL, la conversión de una cadena de caracteres hacia un número falla cuando esa cadena no representa un número válido	
+
+**LOGIN_DENIED(-1017) El programa intentó conectarse a Oracle con un nombre de usuario o password inválido
+
+**NO_DATA_FOUND(100) Una sentencia SELECT INTO no devolvió valores o el programa referenció un elemento no inicializado en una tabla indexada	
+
+**NOT_LOGGED_ON(-1012) El programa efectuó una llamada a Oracle sin estar conectado	
+
+**PROGRAM_ERROR(-6501) PL/SQL tiene un problema interno	
+
+**ROWTYPE_MISMATCH(-6504) Los elementos de una asignación (el valor a asignar y la variable que lo contendrá) tienen tipos incompatibles. También se presenta este error cuando un parámetro pasado a un subprograma no es del tipo esperado	
+
+**SELF_IS_NULL(-30625) El parámetro SELF (el primero que es pasado a un método MEMBER) es nulo
+
+**STORAGE_ERROR(-6500) La memoria se terminó o está corrupta
+
+**SUBSCRIPT_BEYOND_COUNT(-6533) El programa está tratando de referenciar un elemento de un arreglo indexado que se encuentra en una posición más grande que el número real de elementos de la colección
+
+**SUBSCRIPT_OUTSIDE_LIMIT(-6532) El programa está referenciando un elemento de un arreglo utilizando un número fuera del rango permitido (por ejemplo, el elemento “-1”)	
+
+**SYS_INVALID_ROWID(-1410) La conversión de una cadena de caracteres hacia un tipo rowid falló porque la cadena no representa un número
+
+**TIMEOUT_ON_RESOURCE(-51) Se excedió el tiempo máximo de espera por un recurso en Oracle
+
+**TOO_MANY_ROWS(-1422) Una sentencia SELECT INTO devuelve más de una fila
+
+**VALUE_ERROR(-6502) Ocurrió un error aritmético, de conversión o truncamiento. Por ejemplo, sucede cuando se intenta calzar un valor muy grande dentro de una variable más pequeña
+
+**ZERO_DIVIDE(-1476) El programa intentó efectuar una división por cero
