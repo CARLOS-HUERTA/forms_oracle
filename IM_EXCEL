@@ -1,0 +1,168 @@
+PROCEDURE IM_EXCEL IS
+  File CLIENT_TEXT_IO.FILE_TYPE;
+	Line Varchar2(1000);
+	vRutaReportes Varchar2(30);
+	Nombre Varchar2(30);
+	vServer Varchar2(50);
+	nDato number;
+
+	
+			cursor cur01 is
+							--SIN DETRACCION    
+								select  TO_CHAR(xlr.FECHAPAGO,'DD/MM/YYYY') FECHAPAGO,GEN05070(100,xrc.TIPOREGISTRO) TIPOREGISTRO,P.NUMERORUC,P.NOMBRECOMPLETO PROVEEDOR,TO_CHAR(xrc.FECHADOCUMENTO,'DD/MM/YYYY') FECHADOCUMENTO,
+								TO_CHAR(SUBSTR(xrc.PERIODOREGISTRO,1,4)||'-'||SUBSTR(xrc.PERIODOREGISTRO,5,2)) PERIODOREGISTRO,XRC.SERIEDOCUMENTO||'-'||xrc.NUMERODOCUMENTO DOCUMENTO,GEN05070(22,XRC.MONEDA) MONEDA,--GEN05070(22,pdad.MONEDA) MONEDA,
+								TRIM(to_char((xrc.MONTOPAGAR-XRC.MONTORETENCION),'9,999,999,990.00')) IMPORTE,TRIM(to_char(xrc.TIPOCAMBIO,'990.000')) TIPOCAMBIO,
+								TRIM(TO_CHAR(0.00,'9,999,999,990.00')) detraccion,pdad.CODIGOBANCO,trim(to_char(pdad.CUENTABANCO,'99999999999999999990')) CUENTABANCO
+								FROM xliqdetregcompras xld,xliqregcompras xlr,xregistrocompras xrc,persona p, personadatosabonodetalle pdad
+								WHERE   XLD.TIPOREGISTRO=xrc.TIPOREGISTRO
+								and XLD.PERIODOREGISTRO=xrc.PERIODOREGISTRO
+								and XLD.NUMEROREGISTRO = xrc.NUMEROREGISTRO 
+								and xld.periodoliquidacion = xlr.periodoliquidacion
+								AND xld.numeroliquidacion = xlr.numeroliquidacion
+								AND XRC.CODIGOPERSONA = P.CODIGOPERSONA
+								AND pdad.codigopersona = p.codigopersona
+								and xlr.codigobancoprov = pdad.codigobanco
+								and xlr.itembancoprov = pdad.item
+								AND xrc.ESTADODOCUMENTO IN(3,5) ---- Provisionado, Pago Parcial
+								AND xlr.ESTADO = 2 --CAMBIAR A 2
+								AND xlr.FECHAPAGO  between :reporte.txt_fecha1 and nvl(:reporte.txt_fecha2,:reporte.txt_fecha1)
+								AND NVL (xlr.detraccion, 0) != 1
+								UNION ALL
+								--CON DETRACCION
+								select  TO_CHAR(xlr.FECHAPAGOSUNAT,'DD/MM/YYYY'),GEN05070(100,xrc.TIPOREGISTRO),P.NUMERORUC,P.NOMBRECOMPLETO,TO_CHAR(xrc.FECHADOCUMENTO,'DD/MM/YYYY'),
+								TO_CHAR(SUBSTR(xrc.PERIODOREGISTRO,1,4)||'-'||SUBSTR(xrc.PERIODOREGISTRO,5,2)) PERIODOREGISTRO,XRC.SERIEDOCUMENTO||'-'||xrc.NUMERODOCUMENTO DOCUMENTO,GEN05070(22,xrc.MONEDA) MONEDA,---GEN05070(22,xlr.MONEDAPROV) MONEDA,
+								TRIM(TO_CHAR(DECODE(xrc.MONEDA,2,NVL(XRC.MONTORETENCION,0.00),0.00),'9,999,999,990.00')) IMPORTE,TRIM(to_char(xrc.TIPOCAMBIO,'990.000')) TIPOCAMBIO,
+								TRIM(TO_CHAR(ROUND(DECODE(xrc.MONEDA,2,(NVL(XRC.MONTORETENCION,0.00)*xrc.TIPOCAMBIO),NVL(XRC.MONTORETENCION,0.00)),0),'9,999,999,990.00')) detraccion,xlr.CODIGOBANCOPROV,trim(to_char(xlr.CUENTABANCOPROV,'99999999999999999990')) CUENTABANCOPROV
+								FROM xliqdetregcompras xld,xliqregcompras xlr,xregistrocompras xrc,persona p--, personadatosabonodetalle pdad
+								WHERE  XLD.TIPOREGISTRO=xrc.TIPOREGISTRO
+								and XLD.PERIODOREGISTRO=xrc.PERIODOREGISTRO
+								and XLD.NUMEROREGISTRO = xrc.NUMEROREGISTRO 
+								and xld.periodoliquidacion = xlr.periodoliquidacion
+								AND xld.numeroliquidacion = xlr.numeroliquidacion
+								AND XRC.CODIGOPERSONA = P.CODIGOPERSONA
+								--AND pdad.codigopersona = p.codigopersona
+								--and xlr.codigobancoprov = pdad.codigobanco
+								--and xlr.itembancoprov = pdad.item
+								AND xrc.ESTADODOCUMENTO IN(3,5) ---- Provisionado, Pago Parcial
+								AND xlr.ESTADO = 2  --CAMBIAR A 2
+								AND xlr.FECHAPAGOSUNAT between :reporte.txt_fecha1 and nvl(:reporte.txt_fecha2,:reporte.txt_fecha1)
+								AND NVL (xlr.detraccion, 0) = 1;
+						
+						
+						
+						/*	--SIN DETRACCION    
+							select  TO_CHAR(xlr.FECHAPAGO,'DD/MM/YYYY') FECHAPAGO,GEN05070(100,xrc.TIPOREGISTRO) TIPOREGISTRO,P.NUMERORUC,P.NOMBRECOMPLETO PROVEEDOR,TO_CHAR(xrc.FECHADOCUMENTO,'DD/MM/YYYY') FECHADOCUMENTO,
+							TO_CHAR(SUBSTR(xrc.PERIODOREGISTRO,1,4)||'-'||SUBSTR(xrc.PERIODOREGISTRO,5,2)) PERIODOREGISTRO,XRC.SERIEDOCUMENTO||'-'||xrc.NUMERODOCUMENTO DOCUMENTO,GEN05070(22,pdad.MONEDA) MONEDA,
+							TRIM(to_char((xrc.MONTOPAGAR-XRC.MONTORETENCION),'9,999,999,990.00')) IMPORTE,TRIM(to_char(xrc.TIPOCAMBIO,'990.000')) TIPOCAMBIO,
+							TRIM(TO_CHAR(0.00,'9,999,999,990.00')) detraccion,pdad.CODIGOBANCO,trim(to_char(pdad.CUENTABANCO,'99999999999999999990')) CUENTABANCO
+							FROM xliqdetregcompras xld,xliqregcompras xlr,xregistrocompras xrc,persona p, personadatosabonodetalle pdad
+							WHERE   XLD.TIPOREGISTRO=xrc.TIPOREGISTRO
+							and XLD.PERIODOREGISTRO=xrc.PERIODOREGISTRO
+							and XLD.NUMEROREGISTRO = xrc.NUMEROREGISTRO 
+							and xld.periodoliquidacion = xlr.periodoliquidacion
+							AND xld.numeroliquidacion = xlr.numeroliquidacion
+							AND XRC.CODIGOPERSONA = P.CODIGOPERSONA
+							AND pdad.codigopersona = p.codigopersona
+							and xlr.codigobancoprov = pdad.codigobanco
+							and xlr.itembancoprov = pdad.item
+							AND xrc.ESTADODOCUMENTO IN(3,5) ---- Provisionado, Pago Parcial
+							AND xlr.ESTADO = 2 --CAMBIAR A 2
+							AND xlr.FECHAPAGO  between :reporte.txt_fecha1 and nvl(:reporte.txt_fecha2,:reporte.txt_fecha1)
+							AND NVL (xlr.detraccion, 0) != 1
+							UNION ALL
+							--CON DETRACCION
+							select  TO_CHAR(xlr.FECHAPAGOSUNAT,'DD/MM/YYYY'),GEN05070(100,xrc.TIPOREGISTRO),P.NUMERORUC,P.NOMBRECOMPLETO,TO_CHAR(xrc.FECHADOCUMENTO,'DD/MM/YYYY'),
+							TO_CHAR(SUBSTR(xrc.PERIODOREGISTRO,1,4)||'-'||SUBSTR(xrc.PERIODOREGISTRO,5,2)) PERIODOREGISTRO,XRC.SERIEDOCUMENTO||'-'||xrc.NUMERODOCUMENTO DOCUMENTO,GEN05070(22,xlr.MONEDAPROV) MONEDA,
+							TRIM(TO_CHAR(0.00,'9,999,999,990.00')) IMPORTE,TRIM(to_char(xrc.TIPOCAMBIO,'990.000')) TIPOCAMBIO,
+							TRIM(TO_CHAR(NVL(XRC.MONTORETENCION,0.00),'9,999,999,990.00')) detraccion,xlr.CODIGOBANCOPROV,trim(to_char(xlr.CUENTABANCOPROV,'99999999999999999990')) CUENTABANCOPROV
+							FROM xliqdetregcompras xld,xliqregcompras xlr,xregistrocompras xrc,persona p--, personadatosabonodetalle pdad
+							WHERE  XLD.TIPOREGISTRO=xrc.TIPOREGISTRO
+							and XLD.PERIODOREGISTRO=xrc.PERIODOREGISTRO
+							and XLD.NUMEROREGISTRO = xrc.NUMEROREGISTRO 
+							and xld.periodoliquidacion = xlr.periodoliquidacion
+							AND xld.numeroliquidacion = xlr.numeroliquidacion
+							AND XRC.CODIGOPERSONA = P.CODIGOPERSONA
+							--AND pdad.codigopersona = p.codigopersona
+							--and xlr.codigobancoprov = pdad.codigobanco
+							--and xlr.itembancoprov = pdad.item
+							AND xrc.ESTADODOCUMENTO IN(3,5) ---- Provisionado, Pago Parcial
+							AND xlr.ESTADO = 2  --CAMBIAR A 2
+							AND xlr.FECHAPAGOSUNAT between :reporte.txt_fecha1 and nvl(:reporte.txt_fecha2,:reporte.txt_fecha1)
+							AND NVL (xlr.detraccion, 0) = 1;
+			*/
+			
+V_MONTORETENCION VARCHAR2(20);
+					        
+Begin
+	
+	
+   BEGIN
+			
+			SELECT TO_CHAR(SUM(ROUND(DECODE(xrc.MONEDA,2,(NVL(XRC.MONTORETENCION,0.00)*xrc.TIPOCAMBIO),NVL(XRC.MONTORETENCION,0.00)),0)),'9,999,999,990.00') INTO V_MONTORETENCION
+			FROM xliqdetregcompras xld,xliqregcompras xlr,xregistrocompras xrc,persona p--, personadatosabonodetalle pdad
+			WHERE  XLD.TIPOREGISTRO=xrc.TIPOREGISTRO
+			and XLD.PERIODOREGISTRO=xrc.PERIODOREGISTRO
+			and XLD.NUMEROREGISTRO = xrc.NUMEROREGISTRO 
+			and xld.periodoliquidacion = xlr.periodoliquidacion
+			AND xld.numeroliquidacion = xlr.numeroliquidacion
+			AND XRC.CODIGOPERSONA = P.CODIGOPERSONA
+			--AND pdad.codigopersona = p.codigopersona
+			--and xlr.codigobancoprov = pdad.codigobanco
+			--and xlr.itembancoprov = pdad.item
+			AND xrc.ESTADODOCUMENTO IN(3,5) ---- Provisionado, Pago Parcial
+			AND xlr.ESTADO = 2  --CAMBIAR A 2
+			AND xlr.FECHAPAGOSUNAT between :reporte.txt_fecha1 and nvl(:reporte.txt_fecha2,:reporte.txt_fecha1)
+			AND NVL (xlr.detraccion, 0) = 1;
+   EXCEPTION
+   	WHEN OTHERS THEN
+   		im$_alertamensajes(0,'Error '||sqlerrm);
+   	END ;
+	--
+	Set_Application_Property(Cursor_Style, 'Busy');
+	vRutaReportes := ADM08010.CarpetaTempFisica; --'c:\sisgo\tempreport\';
+  --Select tblDescri Into vServer From syst900 Where tblcodtab = 50 And tblcodarg = 3; 
+	
+	Nombre :='LIQ_'||TO_CHAR(SYSDATE,'DD-MM-YYYY_HH24-MI-SS');
+	
+	
+	File := CLIENT_TEXT_IO.FOPEN(vRutaReportes || Nombre || '.xls', 'w');
+	
+  LINE:='FECHAPAGO'||CHR(9)||'TIPOREGISTRO'||CHR(9)||'NUMERORUC'||CHR(9)||'PROVEEDOR'||CHR(9)||'FECHADOCUMENTO'||CHR(9)||'PERIODOREGISTRO'||
+	CHR(9)||'DOCUMENTO'||CHR(9)||'MONEDA'||CHR(9)||'IMPORTE'||CHR(9)||'TIPOCAMBIO'||CHR(9)||'DETRACCION'||CHR(9)||'CODIGOBANCO'||CHR(9)||'CUENTABANCO';
+	IM_Enter(File, LINE);
+	
+	for c1 in cur01 loop 
+			
+	LINE:=c1.FECHAPAGO||CHR(9)||c1.TIPOREGISTRO||CHR(9)||c1.NUMERORUC||CHR(9)||c1.PROVEEDOR||CHR(9)||
+	c1.FECHADOCUMENTO||CHR(9)||c1.PERIODOREGISTRO||CHR(9)||c1.DOCUMENTO||CHR(9)||c1.MONEDA||CHR(9)||c1.IMPORTE||CHR(9)||
+	c1.TIPOCAMBIO||CHR(9)||c1.detraccion||CHR(9)||c1.CODIGOBANCO||CHR(9)||c1.CUENTABANCO;
+
+	IM_Enter(File, LINE);
+		
+	end loop;
+	
+	LINE:=' '||CHR(9)||' '||CHR(9)||' '||CHR(9)||' '||CHR(9)||' '||CHR(9)||' '||CHR(9)||' '||CHR(9)||' '||CHR(9)||' '||CHR(9)||' '||CHR(9)||V_MONTORETENCION||CHR(9)||' ';
+	IM_Enter(File, LINE);
+	
+		CLIENT_TEXT_IO.FCLOSE(file);
+	
+		SYNCHRONIZE;
+		  --host ('Type c:\Mg$Soft\Nombre.txt > prn', no_screen);
+		  If Get_Application_Property(USER_INTERFACE) = 'WEB' Then
+			--	Web.Show_Document('http://'||vServer||ADM08010.CarpetaTempVirtual||Nombre||'.xls', '_blank');
+			--CLIENT_Host('cmd /c start '||vRutaReportes||Nombre||'.xls');
+		--	CLIENT_Host('rundll32.exe url.dll,FileProtocolHandler '||vRutaReportes||Nombre||'.xls');
+			CLIENT_Host('cmd /c start IEXPLORE '||vRutaReportes||Nombre||'.xls');
+			Else
+				Host('c:\archiv~1\micros~2\office\excel.exe '||vRutaReportes||Nombre||'.xls');
+			End If;	
+			Set_Application_Property(Cursor_Style, 'Default');
+	
+ 	EXCEPTION
+	WHEN OTHERS THEN
+	CLIENT_TEXT_IO.FCLOSE(file);
+	Set_Application_Property(Cursor_Style, 'Default');
+	im$_alertamensajes(0,'Error no controlado '||sqlerrm);
+End;
+	
+	

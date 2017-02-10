@@ -1,0 +1,6 @@
+HIDE_WINDOW('reporte');
+go_block('reporte');
+CLEAR_BLOCK(NO_VALIDATE);
+SHOW_VIEW('canvas1');
+SHOW_VIEW('canvas3');
+go_block('block1');

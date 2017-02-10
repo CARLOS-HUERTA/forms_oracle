@@ -1,0 +1,371 @@
+PROCEDURE IM$_Salir IS
+    alert_id alert;
+    seleccion number;
+    mensaje varchar2(80);
+BEGIN
+    alert_id := Find_Alert ('SALIR');
+    mensaje := 'Está seguro que desea Salir al Menú Inicial ?';
+    set_alert_property(alert_id,title,'Salir al Menú Inicial');
+    set_alert_property(alert_id,alert_message_text,mensaje);
+    seleccion := Show_ALert(alert_id);
+    IF
+         seleccion = ALERT_BUTTON1
+    THEN
+	 IM$_EraseGlobales;
+	 erase('global.TransaccionMenu');
+         clear_form(no_validate);
+         clear_form(full_rollback);
+         exit_form;
+    ELSE
+         null;
+    END IF;
+END;
+
+
+---------------------------------------------
+--
+---------------------------------------------
+
+function Letra( MonComp In decimal, Moneda in Number) 
+RETURN varchar2 IS
+BEGIN 
+   Declare
+      wletras   varchar(100);
+      wdeci     VARCHAR2(1);
+      wlong     number(3);
+      wente     number(3);
+      wnumero   VARCHAR2(2);
+      wlet      VARCHAR2(1);
+      wmil      VARCHAR2(3);
+      wuno      VARCHAR2(1);
+      wdos      VARCHAR2(1);
+      wtres     VARCHAR2(1);
+      wmonto  number;
+      globalD   Varchar2(2);
+      BEGIN
+         wlong :=  1;
+         wletras:= ' ';
+         wdeci :=  'N';
+         wmil  :=  ' ';
+         wuno  :=  'N';
+         wdos  :=  'N';
+         wtres :=  'N';
+         wmonto := MONCOMP;
+      loop
+         IF wlong <= NVL(LENGTH(to_char(wmonto)), 0)  then
+          wlet := substr(to_char(wmonto),wlong,1);
+      if  wlet = '.' then
+          wlong   := wlong+1;
+          wnumero := substr(to_char(wmonto),wlong,2);
+          if substr(to_char(wmonto),wlong+1,1) is null then
+             wnumero:=substr(wnumero,1,1)||'0';
+          end if;
+          if Moneda=0 then
+            wletras  := wletras||' Y '||wnumero||'/100 NUEVOS SOLES.';
+          else
+            wletras  := wletras||' Y '||wnumero||'/100 DOLARES AMERICANOS.';
+          end if;
+          if wlong=2 then
+            if Moneda=0 then
+               wletras  := wletras||wnumero||'/100 NUEVOS SOLES.';
+            else
+               wletras  := wletras||wnumero||'/100 DOLARES AMERICANOS.';
+            end if;
+          end if;
+          wdeci := 'S';
+          EXIT;
+      else
+          if wlong=NVL(LENGTH(to_char(wmonto)), 0) or
+             (substr(to_char(wmonto),wlong+1,1))='.'   then
+             if wlet ='0'  then
+                wletras:=wletras||' ';
+             elsif wlet='1' and (substr(to_char(wmonto),wlong-1,1))!='1' then
+                wletras :=wletras||'UNO';
+             elsif wlet='2' and (substr(to_char(wmonto),wlong-1,1))!='1' then
+                wletras :=wletras||'DOS';
+             elsif wlet='3' and (substr(to_char(wmonto),wlong-1,1))!='1' then
+                wletras :=wletras||'TRES';
+             elsif wlet='4' and (substr(to_char(wmonto),wlong-1,1))!='1' then
+                wletras :=wletras||'CUATRO';
+             elsif wlet='5' and (substr(to_char(wmonto),wlong-1,1))!='1' then
+                wletras :=wletras||'CINCO';
+             elsif wlet='6' then
+                wletras :=wletras||'SEIS';
+             elsif wlet='7' then
+                wletras :=wletras||'SIETE';
+             elsif wlet='8' then
+                wletras :=wletras||'OCHO';
+             elsif wlet='9' then
+                wletras:=wletras||'NUEVE';
+             end if;
+             if wlong = NVL(LENGTH(to_char(wmonto)), 0) then
+               if Moneda=0 then
+                  wletras :=wletras||' NUEVOS SOLES.';
+               else
+                  wletras :=wletras||' DOLARES AMERICANOS.';
+               end if;
+                exit;
+             end if;
+          else
+             if wlong = NVL(LENGTH(to_char(wmonto)), 0)-1 or
+                (substr(to_char(wmonto),wlong+2,1))='.' then
+               if wlet ='0'  then
+                  wletras:=wletras||' ';
+               elsif wlet='1'  then
+                  if   (substr(to_char(wmonto),wlong+1,1))='0' then
+                     wletras :=wletras||'DIEZ';
+                  elsif (substr(to_char(wmonto),wlong+1,1))='1' then
+                     wletras :=wletras||'ONCE';
+                  elsif (substr(to_char(wmonto),wlong+1,1))='2' then
+                     wletras :=wletras||'DOCE';
+                  elsif (substr(to_char(wmonto),wlong+1,1))='3' then
+                     wletras :=wletras||'TRECE';
+                  elsif (substr(to_char(wmonto),wlong+1,1))='4' then
+                     wletras :=wletras||'CATORCE';
+                  elsif (substr(to_char(wmonto),wlong+1,1))='5' then
+                     wletras :=wletras||'QUINCE';
+                  else
+                     wletras :=wletras||'DIECI';
+                  end if;
+               elsif wlet='2'  then
+                  if (substr(to_char(wmonto),wlong+1,1))='0' then
+                     wletras :=wletras||'VEINTE';
+                  else
+                     wletras :=wletras||'VEINTI';
+                  end if;
+               elsif wlet='3'  then
+                  wletras :=wletras||'TREINTA';
+                  if (substr(to_char(wmonto),wlong+1,1))!='0' then
+                     wletras :=wletras||'I';
+                  end if;
+               elsif wlet='4'  then
+                  wletras :=wletras||'CUARENTA';
+                  if (substr(to_char(wmonto),wlong+1,1))!='0' then
+                     wletras :=wletras||'I';
+                  end if;
+               elsif wlet='5'  then
+                  wletras :=wletras||'CINCUENTA';
+                  if (substr(to_char(wmonto),wlong+1,1))!='0' then
+                     wletras :=wletras||'I';
+                  end if;
+               elsif wlet='6'  then
+                  wletras :=wletras||'SESENTA';
+                  if (substr(to_char(wmonto),wlong+1,1))!='0' then
+                     wletras :=wletras||'I';
+                  end if;
+               elsif wlet='7'  then
+                  wletras :=wletras||'SETENTA';
+                  if (substr(to_char(wmonto),wlong+1,1))!='0' then
+                     wletras :=wletras||'I';
+                  end if;
+               elsif wlet='8'  then
+                  wletras :=wletras||'OCHENTA';
+                  if (substr(to_char(wmonto),wlong+1,1))!='0' then
+                     wletras :=wletras||'I';
+                  end if;
+               elsif wlet='9'  then
+                  wletras :=wletras||'NOVENTA';
+                  if (substr(to_char(wmonto),wlong+1,1))!='0' then
+                     wletras :=wletras||'I';
+                  end if;
+               end if;
+             else
+               if wlong = NVL(LENGTH(to_char(wmonto)), 0)-2 or
+                  (substr(to_char(wmonto),wlong+3,1))='.' then
+                 if wlet ='0'  then
+                    wletras:=wletras||' ';
+                 elsif wlet='1'  then
+                    wletras:=wletras||'CIEN';
+                    if substr(to_char(wmonto),wlong+1,1)!='0' and
+                       substr(to_char(wmonto),wlong+2,1)!='0' then
+                       wletras:=wletras||'TO ';
+                    end if;
+                 elsif wlet='2'  then
+                    wletras:=wletras||'DOSCIENTOS ';
+                 elsif wlet='3'  then
+                    wletras:=wletras||'TRESCIENTOS ';
+                 elsif wlet='4'  then
+                    wletras:=wletras||'CUATROCIENTOS ';
+                 elsif wlet='5'  then
+                    wletras:=wletras||'QUINIENTOS ';
+                 elsif wlet='6'  then
+                    wletras:=wletras||'SEISCIENTOS ';
+                 elsif wlet='7'  then
+                    wletras:=wletras||'SETECIENTOS ';
+                 elsif wlet='8'  then
+                    wletras:=wletras||'OCHOCIENTOS ';
+                 elsif wlet='9'  then
+                    wletras:=wletras||'NOVECIENTOS ';
+                 end if;
+               else
+               if (wlong=NVL(LENGTH(to_char(wmonto)), 0)-3 and
+                  substr(to_char(wmonto),2,1)!='.')  or
+                  (substr(to_char(wmonto),wlong+4,1))='.' then
+                  if  wlet='1' then
+                      if wlong=1 then
+                         wletras:=wletras||' MIL ';
+                      ELSif (substr(to_char(wmonto),wlong-1,1))!='1' then
+                         wletras:=wletras||' UN MIL ';
+                      end if;
+                  elsif  wlet='2'
+                      and (substr(to_char(wmonto),wlong-1,1))!='1' then
+                      wletras:=wletras||'DOS MIL ';
+                  elsif  wlet='3'
+                      and (substr(to_char(wmonto),wlong-1,1))!='1' then
+                      wletras:=wletras||'TRES MIL ';
+                  elsif  wlet='4'
+                      and (substr(to_char(wmonto),wlong-1,1))!='1' then
+                      wletras:=wletras||'CUATRO MIL ';
+                  elsif  wlet='5'
+                      and (substr(to_char(wmonto),wlong-1,1))!='1' then
+                      wletras:=wletras||'CINCO MIL ';
+                  elsif  wlet='6'  then
+                      wletras:=wletras||'SEIS MIL ';
+                  elsif  wlet='7'  then
+                      wletras:=wletras||'SIETE MIL ';
+                  elsif  wlet='8'  then
+                      wletras:=wletras||'OCHO MIL ';
+                  elsif  wlet='9'  then
+                      wletras:=wletras||'NUEVE MIL ';
+                  end if;
+               else
+               if (wlong=NVL(LENGTH(to_char(wmonto)), 0)-4 and
+                  substr(to_char(wmonto),3,1)!='.')  or
+                  (substr(to_char(wmonto),wlong+5,1))='.' then
+                  if wlet='1'  then
+                     if    (substr(to_char(wmonto),wlong+1,1))='0' then
+                        wletras :=wletras||'DIEZ MIL ';
+                     elsif (substr(to_char(wmonto),wlong+1,1))='1' then
+                        wletras :=wletras||'ONCE MIL ';
+                     elsif (substr(to_char(wmonto),wlong+1,1))='2' then
+                        wletras :=wletras||'DOCE MIL ';
+                     elsif (substr(to_char(wmonto),wlong+1,1))='3' then
+                        wletras :=wletras||'TRECE MIL ';
+                     elsif (substr(to_char(wmonto),wlong+1,1))='4' then
+                        wletras :=wletras||'CATORCE MIL ';
+                     elsif (substr(to_char(wmonto),wlong+1,1))='5' then
+                        wletras :=wletras||'QUINCE MIL ';
+                     elsif (substr(to_char(wmonto),wlong+1,1))!='0' then
+                        wletras :=wletras||'DIECI';
+                     end if;
+                  elsif wlet='2'  then
+                   if (substr(to_char(wmonto),wlong+1,1))='0' then
+                      wletras :=wletras||'VEINTE MIL ';
+                   else
+                      wletras :=wletras||'VEINTI';
+                   end if;
+                 elsif wlet='3'  then
+                   if (substr(to_char(wmonto),wlong+1,1))!='0' then
+                      wletras :=wletras||'TREINTAI';
+                   else
+                      wletras :=wletras||'TREINTA MIL ';
+                   end if;
+                 elsif wlet='4'  then
+                   if (substr(to_char(wmonto),wlong+1,1))!='0' then
+                      wletras :=wletras||'CUARENTAI';
+                   else
+                      wletras :=wletras||'CUARENTA MIL ';
+                   end if;
+                 elsif wlet='5'  then
+                   if (substr(to_char(wmonto),wlong+1,1))!='0' then
+                      wletras :=wletras||'CINCUENTAI';
+                   else
+                      wletras :=wletras||'CINCUENTA MIL ';
+                   end if;
+                 elsif wlet='6'  then
+                   if (substr(to_char(wmonto),wlong+1,1))!='0' then
+                      wletras :=wletras||'SESENTAI';
+                   else
+                      wletras :=wletras||'SESENTA MIL ';
+                   end if;
+                 elsif wlet='7'  then
+                   if (substr(to_char(wmonto),wlong+1,1))!='0' then
+                      wletras :=wletras||'SETENTAI';
+                   else
+                      wletras :=wletras||'SETENTA MIL ';
+                   end if;
+                 elsif wlet='8'  then
+                   if (substr(to_char(wmonto),wlong+1,1))!='0' then
+                      wletras :=wletras||'OCHENTAI';
+                   else
+                      wletras :=wletras||'OCHENTA MIL ';
+                   end if;
+                 elsif wlet='9'  then
+                   if (substr(to_char(wmonto),wlong+1,1))!='0' then
+                      wletras :=wletras||'NOVENTAI';
+                   else
+                      wletras :=wletras||'NOVENTA MIL ';
+                   end if;
+                 end if;
+               ELSE
+               IF (wlong=NVL(LENGTH(to_char(wmonto)), 0)-5 and
+                  substr(to_char(wmonto),4,1)!='.')
+                  or (substr(to_char(wmonto),wlong+6,1))='.' then
+                  if wlet='1'  then
+                     wletras:=wletras||'CIEN';
+                     if substr(to_char(wmonto),wlong+1,1)!='0' or
+                        substr(to_char(wmonto),wlong+2,1)!='0' then
+                        wletras:=wletras||'TO ';
+                     elsif substr(to_char(wmonto),wlong+1,1)='0' and
+                        substr(to_char(wmonto),wlong+2,1)='0' then
+                        wletras:=wletras||' MIL ';
+                     end if;
+                  elsif wlet='2'  then
+                       wletras:=wletras||'DOSCIENTOS ';
+                  elsif wlet='3'  then
+                       wletras:=wletras||'TRESCIENTOS ';
+                  elsif wlet='4'  then
+                       wletras:=wletras||'CUATROCIENTOS ';
+                  elsif wlet='5'  then
+                       wletras:=wletras||'QUINIENTOS ';
+                  elsif wlet='6'  then
+                       wletras:=wletras||'SEISCIENTOS ';
+                  elsif wlet='7'  then
+                       wletras:=wletras||'SETECIENTOS ';
+                  elsif wlet='8'  then
+                       wletras:=wletras||'OCHOCIENTOS ';
+                  elsif wlet='9'  then
+                       wletras:=wletras||'NOVECIENTOS ';
+                  end if;
+               ELSE
+                   if    wlet = '1' then
+                      wletras := wletras||'UN MILLON ';
+                   elsif wlet = '2' then
+                      wletras := wletras||'DOS MILLONES ';
+                   elsif wlet = '3' then
+                      wletras := wletras||'TRES MILLONES ';
+                   elsif wlet = '4' then
+                      wletras := wletras||'CUATRO MILLONES ';
+                   elsif wlet = '5' then
+                      wletras := wletras||'CINCO MILLONES ';
+                   elsif wlet = '6' then
+                      wletras := wletras||'SEIS MILLONES ';
+                   elsif wlet = '7' then
+                      wletras := wletras||'SIETE MILLONES ';
+                   elsif wlet = '8' then
+                      wletras := wletras||'OCHO MILLONES ';
+                   elsif wlet = '9' then
+                      wletras := wletras||'NUEVE MILLONES ';
+                   end if;
+                  /*   fin de adiciones para millones  */
+               END IF;
+               end if;
+               end if;
+               end if;
+            end if;
+          end if;
+          wlong := wlong+1;
+      end if;
+         END IF;
+      end loop;
+         if to_char(wmonto) not like '%.%' then
+          if Moneda=0 then
+            wletras := replace(wletras,'NUEVOS SOLES','Y 00/100 NUEVOS SOLES');
+          else
+            wletras := replace(wletras,'DOLARES AMERICANOS','Y 00/100 DOLARES AMERICANOS');
+          end if;
+         end if;
+       return wletras;
+     end;
+  return '****';
+END;

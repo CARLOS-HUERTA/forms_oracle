@@ -1,0 +1,602 @@
+PROCEDURE im_imprimereciboX IS
+   FILE                     CLIENT_TEXT_IO.file_type;
+   line                     VARCHAR2 (300);
+   vetiqueta                VARCHAR2 (40);
+   vmoneda                  VARCHAR2 (10);
+   vruc                     VARCHAR2 (11);
+   vnombre                  VARCHAR2 (60);
+   vrutareportes            VARCHAR2 (255)           := 'C:\sisgo\tempreport\';
+   vnombrearchivo           VARCHAR2 (255)           := 'REC.txt';-- || TO_CHAR (:Block1.PeriodoCaja ||:Block1.NumeroCaja) ||TO_CHAR (SYSDATE, 'yyyymmddhhmiss')|| '.txt';
+   nmontoretenido           NUMBER;
+   nmontototal              NUMBER;
+   npagoacuenta             NUMBER;
+   ntretenido               NUMBER                   := 0;
+   nttotal                  NUMBER                   := 0;
+   ntacuenta                NUMBER                   := 0;
+   ntipomovimiento          NUMBER;
+   nperiodoguia             NUMBER;
+   nnumeroguia              NUMBER;
+   ncontenido               VARCHAR2 (200)           := NULL;
+   ncodigocinta             VARCHAR2 (20)            := NULL;
+   dvalor                   VARCHAR2 (20)            := NULL;
+   dcodante                 VARCHAR2 (10)            := NULL;
+   dnombrecom               VARCHAR2 (60)            := NULL;
+   darea                    VARCHAR2 (60)            := NULL;
+   dusuario                 VARCHAR2 (60)            := NULL;
+   dcont                    NUMBER                   := 0;
+   dubicacion               VARCHAR2 (20)            := NULL;
+   dcapitulo                VARCHAR2 (60)            := NULL;
+   noimprimir               NUMBER                   := 0;
+   npasa                    NUMBER                   := 0;
+   vcliente                 VARCHAR2 (50);
+   vsaldo                   NUMBER                   := 0;
+   vmensaje                 VARCHAR2 (100)           := NULL;
+   vcafeteria               NUMBER (3)               := 0;
+   vcodigopersona           NUMBER (10);
+   vnombrecompleto          VARCHAR2 (38);
+   vnumeroruc               VARCHAR2 (15);
+   vdireccion               VARCHAR2 (40);
+   vtelefono                VARCHAR2 (15);
+   vautorizacionsunat       VARCHAR2 (15);
+   vnombrecompletocliente   VARCHAR2 (40);
+   vnumeroruccliente        VARCHAR2 (40);
+   vcallenumero             VARCHAR2 (55);
+   vnumeropuerta            VARCHAR2 (10);
+   vnumerointerior          VARCHAR2 (10);
+   vcodigopostal                        VARCHAR2 (10);
+   vdescripcioncafeteria    VARCHAR2 (40);
+   personaori                                VARCHAR2 (100);
+   vtbldescri               VARCHAR (100);
+   nombreori                VARCHAR2 (100);
+   docu                     NUMBER(12);
+   monedacaja                                NUMBER;
+        x                                                NUMBER;
+  	V_CODIGOPERSONA 				NUMBER(7);
+  	V_PERSONAORIGEN					NUMBER(7);
+  	V_PERSONAFUENTE					NUMBER(7);
+    V_NRODOCUMENTO					VARCHAR2(20);
+    V_NRODOCUMENTO2					NUMBER(3);   
+        
+    CURSOR CUR04 IS
+   SELECT G.CODIGOPERSONA, P.NOMBRECOMPLETO, P.CIP FROM(   
+   SELECT PERSONAINTEGRANTE CODIGOPERSONA FROM DATOSINTEGRANTES WHERE 
+   NUMEROCUENTA in(select numerodocumento 
+   from cajadetalle where nivelmovimiento =  1 
+   and grupomovimiento in(1,5)
+   and CodigoAgenciaCaja =:Block1.Agencia
+     And PeriodoCaja = :Block1.PeriodoCaja
+     And NumeroCaja = :Block1.NumeroCaja) 
+   UNION 
+   SELECT CODIGOPERSONA FROM CUENTACORRIENTE WHERE NUMEROCUENTA in(select numerodocumento 
+   from cajadetalle where nivelmovimiento =  1 
+   and grupomovimiento in(1,5)
+   and CodigoAgenciaCaja =:Block1.Agencia
+     And PeriodoCaja = :Block1.PeriodoCaja
+     And NumeroCaja = :Block1.NumeroCaja) ) G, PERSONA  P WHERE  G.CODIGOPERSONA = P.CODIGOPERSONA AND P.CODIGOPERSONA NOT IN
+      (SELECT CODIGOPERSONA FROM CAJA WHERE CodigoAgenciaCaja = :Block1.Agencia
+     And PeriodoCaja = :Block1.PeriodoCaja
+     And NumeroCaja = :Block1.NumeroCaja);    
+        
+        
+ /*
+  CH- 19/06/2016
+  CURSOR CUR03 is    
+			Select NumeroDocumento, GEN05070(22,moneda1) MONEDA1, tablaservicio
+
+			From (
+			  Select b.Codigoagenciacaja CodigoAgenciaCaja_d, b.Periodocaja PeriodoCaja_d, b.Numerocaja NumeroCaja_d, b.Numeroitem, 
+			    b.Nivelmovimiento, b.Grupomovimiento, c.Codigomovimiento, b.Moneda,
+			    b.Tipodocumento, b.Periododocumento, b.Numerodocumento, b.Comentario,
+			    c.Subimportedolares, c.Subimportesoles,
+			    i.ConceptoGrupoMovimiento, j.ConceptoMovimiento, X.MONEDA moneda1, x.tablaservicio
+			  From CajaDetalle b, CajaDetalleRubros c, GrupoOperaciones i, CodigoOperaciones j, CUENTACORRIENTE X
+			  Where b.GrupoMovimiento In (3,1,5,22)
+			    And b.CodigoAgenciaCaja = c.CodigoAgenciaCaja
+			    And b.PeriodoCaja = c.PeriodoCaja
+			    And b.NumeroCaja = c.NumeroCaja
+			    And b.NumeroItem = c.NumeroItem
+			    And b.NivelMovimiento = i.NivelMovimiento
+			    And b.GrupoMovimiento = i.GrupoMovimiento
+			    And b.NivelMovimiento = j.NivelMovimiento
+			    And b.GrupoMovimiento = j.GrupoMovimiento
+			    And c.CodigoMovimiento = j.CodigoMovimiento
+			    AND X.NUMEROCUENTA  = B.NUMERODOCUMENTO
+			)
+		  Where CodigoAgenciaCaja_d = :Block1.Agencia
+		   And PeriodoCaja_d = :Block1.PeriodoCaja
+		   And NumeroCaja_d = :Block1.NumeroCaja
+			Group By numerodocumento, MONEDA1, tablaservicio;
+		*/
+		
+		CURSOR CUR03 is    
+					Select NumeroDocumento, GEN05070(22,moneda1) MONEDA1, tablaservicio,ARGUMENTOSERVICIO
+					From (
+					  Select b.Codigoagenciacaja CodigoAgenciaCaja_d, b.Periodocaja PeriodoCaja_d, b.Numerocaja NumeroCaja_d, b.Numeroitem, 
+					    b.Nivelmovimiento, b.Grupomovimiento, c.Codigomovimiento, b.Moneda,
+					    b.Tipodocumento, b.Periododocumento, b.Numerodocumento, b.Comentario,
+					    c.Subimportedolares, c.Subimportesoles,
+					    i.ConceptoGrupoMovimiento, j.ConceptoMovimiento, X.MONEDA moneda1, x.tablaservicio,X.ARGUMENTOSERVICIO
+					  From CajaDetalle b, CajaDetalleRubros c, GrupoOperaciones i, CodigoOperaciones j, CUENTACORRIENTE X
+					  Where b.GrupoMovimiento In (3,1,5,22)
+					    And b.CodigoAgenciaCaja = c.CodigoAgenciaCaja
+					    And b.PeriodoCaja = c.PeriodoCaja
+					    And b.NumeroCaja = c.NumeroCaja
+					    And b.NumeroItem = c.NumeroItem
+					    And b.NivelMovimiento = i.NivelMovimiento
+					    And b.GrupoMovimiento = i.GrupoMovimiento
+					    And b.NivelMovimiento = j.NivelMovimiento
+					    And b.GrupoMovimiento = j.GrupoMovimiento
+					    And c.CodigoMovimiento = j.CodigoMovimiento
+					    AND X.NUMEROCUENTA  = B.NUMERODOCUMENTO
+					)
+				  Where CodigoAgenciaCaja_d = :Block1.Agencia
+				   And PeriodoCaja_d = :Block1.PeriodoCaja
+				   And NumeroCaja_d = :Block1.NumeroCaja
+					Group By numerodocumento, MONEDA1, tablaservicio,ARGUMENTOSERVICIO;
+	
+   CURSOR CUR01 IS
+            Select a.Codigoagenciacaja, a.Periodocaja, a.Numerocaja, a.Cuentabanco,
+                a.Tipomovimiento, a.Tipocaja, a.Formapago, a.Tipocambio, a.Glosa, a.Codigopersona,
+                a.Numerocheque, a.Control, a.Codigousuario, a.Fechausuario, a.Fechamovimiento,
+                a.Bancoorigen, LPad(e.Cip,6,'0') Cip,  initcap(e.NombreCompleto) NombreCompleto,
+                GEN05070(39,a.BancoOrigen) vBancoOrigen,   
+              GEN05070(116,a.Control) vTransaccionCaja,
+              GEN05070(32,u.UsrAgeDef) AgenciaUsuario, importe
+            From Caja a, DatosBanco d, Persona e, Syst010 u
+            Where a.CodigoAgenciaCaja = :Block1.Agencia
+                And a.PeriodoCaja = :Block1.PeriodoCaja
+                And a.NumeroCaja = :Block1.NumeroCaja
+                And a.CuentaBanco = d.CuentaBanco
+                And a.CodigoPersona = e.CodigoPersona(+)  --- Codigo de Persona de Caja
+                And a.Control In (4,6,9)
+              And a.CodigoUsuario = u.UsrCodUsu;
+              
+   CURSOR CUR02 IS
+            Select CodigoAgenciaCaja_d, PeriodoCaja_d, NumeroCaja_d, Min(NumeroItem) NumeroItem,
+              Min(NivelMovimiento) NivelMovimiento, Min(GrupoMovimiento) GrupoMovimiento, CodigoMovimiento, Moneda,
+              Min(TipoDocumento) TipoDocumento, Min(PeriodoDocumento) PeriodoDocumento, Min(NumeroDocumento) NumeroDocumento,
+              Min(Comentario) Comentario, (SubImporteDolares) SubImporteDolares, (SubImporteSoles) SubImporteSoles,
+              GEN05070(22,Moneda) vMoneda, GEN05070(22,Moneda,2) vMonedaAbr,
+              Min(ConceptoGrupoMovimiento) ConceptoGrupoMovimiento, ConceptoMovimiento
+            From (
+              Select b.Codigoagenciacaja CodigoAgenciaCaja_d, b.Periodocaja PeriodoCaja_d, b.Numerocaja NumeroCaja_d, b.Numeroitem, 
+                b.Nivelmovimiento, b.Grupomovimiento, c.Codigomovimiento, b.Moneda,
+                b.Tipodocumento, b.Periododocumento, b.Numerodocumento, b.Comentario,
+                c.Subimportedolares, c.Subimportesoles,
+                i.ConceptoGrupoMovimiento, j.ConceptoMovimiento
+              From CajaDetalle b, CajaDetalleRubros c, GrupoOperaciones i, CodigoOperaciones j
+              Where b.GrupoMovimiento In (3,1,5,22)
+                And b.CodigoAgenciaCaja = c.CodigoAgenciaCaja
+                And b.PeriodoCaja = c.PeriodoCaja
+                And b.NumeroCaja = c.NumeroCaja
+                And b.NumeroItem = c.NumeroItem
+                And b.NivelMovimiento = i.NivelMovimiento
+                And b.GrupoMovimiento = i.GrupoMovimiento
+                And b.NivelMovimiento = j.NivelMovimiento
+                And b.GrupoMovimiento = j.GrupoMovimiento
+                And c.CodigoMovimiento = j.CodigoMovimiento
+              Union All
+              /* detalle de segundo voucher */
+              Select b.Codigoagenciacaja CodigoAgenciaCaja_d, b.Periodocaja PeriodoCaja_d, :Block1.Numerocaja NumeroCaja_d, b.Numeroitem, 
+                b.Nivelmovimiento, b.Grupomovimiento, c.Codigomovimiento, b.Moneda,
+                b.Tipodocumento, b.Periododocumento, b.Numerodocumento, b.Comentario,
+                c.Subimportedolares * Decode(c.CodigoMovimiento,6,-1,7,-1,1), c.Subimportesoles * Decode(c.CodigoMovimiento,6,-1,7,-1,1),
+                i.ConceptoGrupoMovimiento, j.ConceptoMovimiento
+              From Caja a, CajaDetalle b, CajaDetalleRubros c, GrupoOperaciones i, CodigoOperaciones j
+              Where a.NumeroCheque = :block1.NumeroCheque
+                And a.FormaPago = 3 -- tranf. int.    
+                And a.CodigoAgenciaCaja = :Block1.Agencia
+                And a.PeriodoCaja = :Block1.PeriodoCaja
+                And a.NumeroCaja != :Block1.NumeroCaja
+                And b.GrupoMovimiento In (3,1,5,22)
+                And a.CodigoAgenciaCaja = b.CodigoAgenciaCaja
+                And a.PeriodoCaja = b.PeriodoCaja
+                And a.NumeroCaja = b.NumeroCaja
+                And b.CodigoAgenciaCaja = c.CodigoAgenciaCaja
+                And b.PeriodoCaja = c.PeriodoCaja
+                And b.NumeroCaja = c.NumeroCaja
+                And b.NumeroItem = c.NumeroItem
+                And b.NivelMovimiento = i.NivelMovimiento
+                And b.GrupoMovimiento = i.GrupoMovimiento
+                And b.NivelMovimiento = j.NivelMovimiento
+                And b.GrupoMovimiento = j.GrupoMovimiento
+                And c.CodigoMovimiento = j.CodigoMovimiento  
+            )
+          Where CodigoAgenciaCaja_d = :Block1.Agencia
+           And PeriodoCaja_d = :Block1.PeriodoCaja
+           And NumeroCaja_d = :Block1.NumeroCaja
+            Group By CodigoAgenciaCaja_d, PeriodoCaja_d, NumeroCaja_d, 
+              CodigoMovimiento, Moneda, ConceptoMovimiento   ,SubImporteDolares,  SubImporteSoles
+            Order By 1,2,3 Desc,codigomovimiento asc,4;
+            
+ CURSOR CUR05 IS
+ 
+					 SELECT G.CODIGOPERSONA, P.NOMBRECOMPLETO,PN.numerodocumentoid ,P.CIP FROM(   
+						   SELECT PERSONAINTEGRANTE CODIGOPERSONA FROM  DATOSINTEGRANTES WHERE 
+						   NUMEROCUENTA =(select numerodocumento 
+						   from cajadetalle where nivelmovimiento =  1 
+						   and grupomovimiento =5
+						   and CodigoAgenciaCaja =:Block1.Agencia
+							 And PeriodoCaja = :Block1.PeriodoCaja
+							 And NumeroCaja = :Block1.NumeroCaja) 
+						   UNION 
+						   SELECT CODIGOPERSONA FROM CUENTACORRIENTE WHERE NUMEROCUENTA =(select numerodocumento 
+						   from cajadetalle where nivelmovimiento =  1 
+						   and grupomovimiento =5
+						   and CodigoAgenciaCaja =:Block1.Agencia
+							 And PeriodoCaja = :Block1.PeriodoCaja
+							 And NumeroCaja = :Block1.NumeroCaja) ) G, PERSONA  P,PERSONANATURAL PN WHERE  G.CODIGOPERSONA = P.CODIGOPERSONA 
+							 AND G.CODIGOPERSONA=PN.codigopersona AND P.CODIGOPERSONA 
+							 NOT IN (SELECT CODIGOPERSONA FROM CAJA WHERE CodigoAgenciaCaja = :Block1.Agencia
+							 And PeriodoCaja = :Block1.PeriodoCaja
+							 And NumeroCaja = :Block1.NumeroCaja);
+	 
+	 
+    vNombreEmpresa         Varchar2(60);
+  nNumeroRuc                 Number;
+  Agencia                        varchar(50);
+  vTitulo                        Varchar2(100);
+  ncodigodireccion    Number;
+  vdistrito     Varchar2(100);
+  vprovincia     Varchar2(100);
+  vdepartamento     Varchar2(100); 
+  VPAIS Varchar2(100);
+  concepto Varchar2(100);
+
+BEGIN
+   
+   SET_APPLICATION_PROPERTY (cursor_style, 'busy');
+   BEGIN
+      FILE := CLIENT_TEXT_IO.fopen (vrutareportes || vnombrearchivo, 'w');
+   EXCEPTION WHEN OTHERS THEN
+         SET_APPLICATION_PROPERTY (cursor_style, 'Default');
+
+         IF SQLCODE = -302000 THEN
+            im$_alertamensajes (0, 'Error al intentar crear archivo ' || vrutareportes || vnombrearchivo ||
+                                  ', verifique que el archivo no se encuentre abierto, que pueda ser modificado y que tiene permisos sobre él');
+         ELSE
+            im$_alertamensajes (0, 'Error deconocido al intentar crear archivo: ' || sqlerrm || '-' || vrutareportes || vnombrearchivo);
+         END IF;
+
+         RETURN;
+   END;
+
+   CLIENT_TEXT_IO.putf (FILE, CHR (15));
+   CLIENT_TEXT_IO.putf (FILE, line);
+
+    for c in cur01 loop    
+        begin
+          Select codigopersona
+          Into vcodigopersona
+          From Empresa
+          Where Codigo = GEN05070(500,1);
+        EXCEPTION WHEN OTHERS THEN
+                         vNombreEmpresa := '';
+        end;
+        --
+        begin
+          Select NumeroRuc, nombrecorto
+          Into nNumeroRuc, vNombreEmpresa
+          From Persona
+          Where CodigoPersona = vCodigoPersona;
+        Exception When Others Then 
+                   nNumeroRuc := null;
+                   vNombreEmpresa := null;
+        end;
+        --
+   BEGIN
+      SELECT codigodireccion
+      into ncodigodireccion
+      FROM personadireccion
+      WHERE codigopersona = vcodigopersona;      
+   EXCEPTION  WHEN OTHERS THEN
+         ncodigodireccion := NULL;
+   END;
+   --
+   IF ncodigodireccion IS NOT NULL THEN
+      BEGIN
+          SELECT upper(gen05070(313,tipovia )||' '||callenumero), numeropuerta, numerointerior,
+          gen05300(codigoregion,codigodepartamento, codigoprovincia, CODIGODISTRITO),
+          gen05300(codigoregion,codigodepartamento, codigoprovincia, 0),
+          codigopostal,
+          UPPER(gen05300(codigoregion,codigodepartamento, 0, 0)),UPPER(GEN05070(3,CODIGOPAIS))
+          INTO vcallenumero, vnumeropuerta, vnumerointerior, vdistrito, vprovincia, vcodigopostal, vdepartamento, VPAIS
+          FROM DIRECCION
+          WHERE CODIGODIRECCION = ncodigodireccion;
+      EXCEPTION WHEN OTHERS THEN
+                        vcallenumero := '';
+      END;
+   ELSE
+          vcallenumero := '';
+   END IF;
+   --
+        begin
+         select tbldescri into Agencia
+         from syst900 where tblcodtab=32
+         and tblcodarg = c.CodigoAgenciacaja;
+        exception when others then
+                         Agencia := '';
+        end;
+    --
+        begin      
+            If c.TipoMovimiento = 3 Then
+                vTitulo := 'TRANSFERENCIA';
+            ElsIf c.TipoMovimiento = 2 Then
+                vTitulo := 'SALIDA';
+            Else
+                vTitulo := 'ENTRADA';
+            End If;
+        
+            vTitulo := vTitulo;-- || Nvl(P_OpcionTitulo,'');
+            
+        Exception  When Others Then
+                 vTitulo := '';
+        end;
+   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(64));--rota
+   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(29) || CHR(97) || CHR(1));--centrar
+   
+   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(28) || CHR(112) || CHR(1) || CHR(0));--logo
+   
+   line := vcallenumero||' '||vnumeropuerta||' - '||vnumerointerior ;
+   CLIENT_TEXT_IO.putf (FILE, line);
+   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+   line := vdistrito||' - ' ||vcodigopostal||' - '||VPAIS;
+   CLIENT_TEXT_IO.putf (FILE, line);
+   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+   line := nNumeroRuc;
+   CLIENT_TEXT_IO.putf (FILE, 'RUC : ' || line);
+   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(64));--rota
+   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(64));--rota
+   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+
+   line := TO_CHAR (c.Fechausuario, 'dd/mm/yyyy') || RPAD (' ', 3, ' ') ||
+           TO_CHAR (c.Fechausuario, 'hh24:mi:ss') || RPAD (' ', 4, ' ') ||
+           'OP:' || :Block1.PeriodoCaja || '-' || LPAD (:Block1.NumeroCaja, 7, 0);
+   CLIENT_TEXT_IO.putf (FILE, line);
+   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+   CLIENT_TEXT_IO.putf (FILE, ' ');
+   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+   
+   line := 'Titulares de la Cuenta:';
+   CLIENT_TEXT_IO.putf (FILE, line);
+   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+   line := UPPER(c.nombrecompleto);
+   CLIENT_TEXT_IO.putf (FILE, line);
+   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+    
+   FOR E IN CUR04 LOOP
+       line := UPPER(E.nombrecompleto);
+       CLIENT_TEXT_IO.putf (FILE, line);
+       CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+   END LOOP;
+   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+    x:=1;
+   FOR e IN CUR03 LOOP
+       if x<=1 then
+       
+           if e.tablaservicio =  100 then
+               line := 'APORTES';
+           ELSIF e.tablaservicio =  101 THEN
+               line := 'AHORROS';
+           ELSIF e.tablaservicio =  102 THEN    
+               line := 'PLAZO FIJO';
+           end IF;
+   
+           CLIENT_TEXT_IO.putf (FILE, line);
+           CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));        
+         --CH 19/07/2016  
+         --  line := e.moneda1 || '   '||e.Numerodocumento;
+           line := e.moneda1 || '       '||SUBSTR(GEN05010(e.tablaservicio,e.ARGUMENTOSERVICIO),1,3)||' - '||e.Numerodocumento;
+           CLIENT_TEXT_IO.putf (FILE, line);
+           CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));        
+            
+					SELECT  B.TIPOCONFORMACION INTO V_NRODOCUMENTO2
+					FROM CUENTACORRIENTE A, DATOSCUENTACORRIENTE B
+					WHERE A.NUMEROCUENTA=TO_NUMBER(E.Numerodocumento)
+					AND A.NUMEROCUENTA=B.NUMEROCUENTA
+					and B.FECHAINICIO = (SELECT max(FECHAINICIO) FROM
+					DATOSCUENTACORRIENTE WHERE NUMEROCUENTA= A.NUMEROCUENTA);
+       end if;
+   x:=x+1;
+   end loop;
+   
+   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+   line := 'DETALLE_IMPRIMERECIBO'||LPAD('IMPORTE:',(42-LENGTH('DETALLE_IMPRIMERECIBO')),' ');
+   CLIENT_TEXT_IO.putf (FILE, line);
+   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+   
+   --
+   line := RPAD ('-', 42, '-');
+   CLIENT_TEXT_IO.putf (FILE, line);
+   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+   --
+   FOR D IN CUR02 LOOP
+       if d.nivelmovimiento = 1 then
+           if d.grupomovimiento = 1 then
+               concepto:= 'DEPOSITO';
+               
+                   
+           elsif d.grupomovimiento = 5 THEN
+               concepto:= 'RETIRO';
+           		
+           ELSE
+               CONCEPTO := D.CONCEPTOGRUPOMOVIMIENTO;
+           end if;
+       end if;
+---------------------------
+--CH--     
+--       if d.moneda = 1 then
+--           
+--      line := /*TO_CHAR (D.numeroITEM, '99') || */RPAD (' ', 3, ' ') || RPAD (CONCEPTO, 12, ' ') || RPAD (' ', 2, ' ') ||
+--              D.VMONEDAABR || ' ' || TO_CHAR (D.SUBIMPORTESOLES, 'FM999,999,990.00');
+--       
+--       else
+--       
+--           line := /*TO_CHAR (D.numeroITEM, '99') || */RPAD (' ', 3, ' ') || RPAD (CONCEPTO, 12, ' ') || RPAD (' ', 2, ' ') ||
+--              D.VMONEDAABR || ' ' || TO_CHAR (D.SUBIMPORTEdolares, 'FM999,999,990.00');
+--       end if;
+-----
+       if d.moneda = 1 then
+           
+		      line := CONCEPTO|| LPAD((D.VMONEDAABR || ' ' || TO_CHAR (D.SUBIMPORTESOLES, 'FM999,999,990.00')),(42-LENGTH(CONCEPTO)),' '); 
+		       
+		       else
+		       
+		       line :=CONCEPTO||LPAD((D.VMONEDAABR || ' ' || TO_CHAR (D.SUBIMPORTEdolares, 'FM999,999,990.00')),(42-LENGTH(CONCEPTO)),' ');
+       end if;
+    --------
+      CLIENT_TEXT_IO.putf (FILE, line);
+      CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+      monedacaja := d.moneda;
+   END LOOP;
+   --
+   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+   ---------
+  /* --CH
+  if c.control <>11 then
+       if monedacaja =  1 then
+           line := LPAD ('TOTAL: S/.', 23, ' ') || RPAD (' ', 15, ' ') || TO_CHAR (C.IMPORTE, 'FM999,999,990.00');
+       else 
+           line := LPAD ('TOTAL: US$', 23, ' ') || RPAD (' ', 15, ' ') || TO_CHAR (C.IMPORTE, 'FM999,999,990.00');
+       end if;
+   end if;
+   */
+    if c.control <>11 then
+       if monedacaja =  1 then
+           line := LPAD ('TOTAL: S/.', 23, ' ') || LPAD(TO_CHAR (C.IMPORTE, 'FM999,999,990.00'),19,' ');
+       else 
+           line := LPAD ('TOTAL: US$', 23, ' ') || LPAD(TO_CHAR (C.IMPORTE, 'FM999,999,990.00'),19,' ');
+       end if;
+   end if;
+   ------------
+   CLIENT_TEXT_IO.putf (FILE, line);
+   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+   
+   line := gen05070(21,c.formapago);
+   CLIENT_TEXT_IO.putf (FILE, line);
+   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+   
+   line := 'Tipo Movim.: '||vTitulo;
+   CLIENT_TEXT_IO.putf (FILE, line);
+   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+   line := 'Referencia : ' || c.glosa;
+   CLIENT_TEXT_IO.putf (FILE, line);
+   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+   CLIENT_TEXT_IO.putf (FILE, '');
+   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+    
+--CASO 1 : MISMO SOCIO
+--CASO 2 : TERCEROS
+--CASO 3 : COLECTIVO   
+
+   --IF (V_CODIGOPERSONA= V_PERSONAORIGEN AND V_CODIGOPERSONA=V_PERSONAFUENTE) THEN
+			     BEGIN
+					  SELECT CODIGOPERSONA, PERSONAORIGEN, PERSONAFUENTE INTO V_CODIGOPERSONA, V_PERSONAORIGEN, V_PERSONAFUENTE
+              FROM operacionescontroladas O WHERE O.CODIGOAGENCIACAJA = :Block1.Agencia
+               and O.PERIODOCAJA = :Block1.PeriodoCaja and O.NUMEROCAJA = :Block1.NumeroCaja
+               and O.CODIGOPERSONA = :BLOCK1.CODIGOPERSONA;
+ 					  EXCEPTION WHEN OTHERS  THEN
+ 					    NULL;
+				  END;
+   
+			   
+			   begin
+				       select pe.nombrecompleto into nombreori from operacionescontroladas o, persona pe 
+				       where  o.personaorigen = pe.codigopersona and O.CODIGOAGENCIACAJA = :Block1.Agencia and 
+				       O.PERIODOCAJA =:Block1.PeriodoCaja and O.NUMEROCAJA= :Block1.NumeroCaja
+				       AND O.CODIGOPERSONA=:BLOCK1.CODIGOPERSONA;
+				        exception when others then
+				       line:=' ';
+				   end;
+				   begin
+				       select numerodocumentoid into docu from personanatural p, operacionescontroladas o
+				       where  o.personaorigen = p.codigopersona and O.CODIGOAGENCIACAJA = :Block1.Agencia and
+				        O.PERIODOCAJA =:Block1.PeriodoCaja and O.NUMEROCAJA= :Block1.NumeroCaja
+				        AND O.CODIGOPERSONA=:BLOCK1.CODIGOPERSONA;
+				       exception when others then
+				       line:=' ';
+				   end;  
+				   
+		if 	(V_CODIGOPERSONA= V_PERSONAORIGEN) THEN
+					line := 'Conforme : ___________________________';
+				   CLIENT_TEXT_IO.putf (FILE,line);
+				   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+				   
+					line := 'DNI      : ' ||LPAD(docu,8,0);
+				   CLIENT_TEXT_IO.putf (FILE, line);
+				   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+			
+			
+			  
+   			IF TRIM(V_NRODOCUMENTO2)=4 THEN
+   						
+   			   line := 'SOL      : ' || nombreori;
+				   CLIENT_TEXT_IO.putf (FILE, line); 
+				   CLIENT_TEXT_IO.putf (FILE, '');
+				   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+				   	   
+				   	   FOR F IN CUR05 LOOP
+								   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+								   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+								   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+								   line := 'Conforme : _________________________';
+								   CLIENT_TEXT_IO.putf (FILE, line);
+								   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+								   
+								  line := 'DNI      : '||LPAD(F.numerodocumentoid,8,0);
+								  CLIENT_TEXT_IO.putf (FILE, line);
+								  CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+								   
+								  line := 'SOL      : '||UPPER(F.NOMBRECOMPLETO);
+								  CLIENT_TEXT_IO.putf (FILE, line);
+								  CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+								  
+			     		END LOOP;
+						end if;	 
+  ELSE
+			   
+			   line := 'Conforme : ___________________________';
+			   CLIENT_TEXT_IO.putf (FILE,line);
+			   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+			   
+			   line := 'DNI      : ' || LPAD(docu,8,0);
+			   CLIENT_TEXT_IO.putf (FILE, line);
+			   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+			   
+			   line := 'SOL      : ' || nombreori;
+			   CLIENT_TEXT_IO.putf (FILE, line); 
+			   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+			  
+			  
+		END IF;
+    ------------------------------------
+ 	 CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+   line := 'Cajero(a): ' || GEN05420(USER);
+   CLIENT_TEXT_IO.putf (FILE, line);
+   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+   CLIENT_TEXT_IO.putf (FILE, CHR(27) || CHR(13)|| CHR(10));
+   end loop;
+   --
+   CLIENT_TEXT_IO.putf (FILE, Chr(27) || Chr(100) || Chr(0));
+   
+   CLIENT_TEXT_IO.fclose (FILE);
+   SYNCHRONIZE;
+
+   --CLIENT_HOST ('cmd /c start ' || 'type ' || vrutareportes || vnombrearchivo || ' > prn');
+   CLIENT_HOST ('cmd /c ' ||vrutareportes||'REC.bat');
+   --host ('cmd /c type C:\sisgo\tempreport\REC.txt > prn');
+   
+   SET_APPLICATION_PROPERTY (cursor_style, 'default');
+   
+EXCEPTION
+   WHEN OTHERS THEN
+      im$_alertamensajes (0, 'Existe un error no contemplado ' || SQLERRM ());
+      CLIENT_TEXT_IO.fclose (FILE);
+      SET_APPLICATION_PROPERTY (cursor_style, 'default');
+END;

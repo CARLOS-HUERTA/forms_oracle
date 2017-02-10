@@ -1,0 +1,53 @@
+PROCEDURE p_ordena IS
+/***************************************************
+Modifica el orden del query en funcion al nombre del
+boton que se presiona y refresca el bloque.
+
+Nombre del boton:     pb_nombre_columna
+
+Variables globales:
+global.orden					ASC,DESC
+global.orden_columna  Nombre del item anterior que se
+                      ordeno.
+***************************************************/
+	blk_id block;
+	v_nomitem varchar2(100);
+begin
+
+-- obtiene el id del bloque actual
+
+blk_id := Find_Block(name_in('system.cursor_block'));
+
+default_value('DESC','global.orden');
+
+-- obtiene el nombre de la columna correspondiente a centrar
+v_nomitem:=get_item_property(name_in('system.cursor_item'),item_name);
+v_nomitem:=substr(v_nomitem,4);
+
+-- inicializa la variable global de columna
+default_value('*','global.orden_columna');
+
+if name_in('global.orden_columna')<>v_nomitem then
+	-- Si la columna ha cambiado, siempre ordena en forma ascendente
+	copy('ASC','global.orden');
+else -- si es la misma columna...
+	-- cambia el orden que tenia la columna
+	if name_in('global.orden')='ASC' then
+		copy('DESC','global.orden');
+	else
+		copy('ASC','global.orden');
+	end if;
+end if;
+
+-- cambio el orden de la consulta...
+Set_Block_Property(blk_id,ORDER_BY,v_nomitem||' '||name_in('GLOBAL.ORDEN'));
+
+-- graba ultima columna cuyo orden se cambio
+copy(v_nomitem,'global.orden_columna');
+
+-- refresca el bloque
+execute_query;
+end;
+
+
+

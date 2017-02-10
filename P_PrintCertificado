@@ -1,0 +1,126 @@
+PROCEDURE IM_Enter (File TEXT_IO.FILE_TYPE, Line varchar2) Is
+Begin
+	TEXT_IO.PUT_LINE(File, Line); TEXT_IO.NEW_LINE;
+End;
+
+------------------------------------------------------------------------
+--
+------------------------------------------------------------------------
+
+Procedure P_PrintCertificado (P_NumeroCuenta In Number, P_Fecha in date) Is
+
+ Cursor Recibo Is
+  Select CAP05010(c.NumeroCuenta) Cuenta, p.Cip, p.NombreCompleto, d.NumeroDias, d.FechaInicio,
+         Nvl(d.FechaVencimiento, d.FechaInicio + d.NumeroDias) FechaVencimiento, CRE05410(d.TasaInteres) TasaInteres,
+         c.Moneda, e.TblDesAbr vMoneda, d.MontoInicial
+    From CuentaCorriente c, Persona p, DatosCuentaCorriente d, Syst900 e
+   Where c.NumeroCuenta = P_NumeroCuenta
+     And p.CodigoPersona = c.CodigoPersona
+     And d.NumeroCuenta = c.NumeroCuenta
+     And e.TblCodTab = 22 And e.TblCodArg = c.Moneda
+     And d.FechaInicio In ( Select Max(x.FechaInicio) From DatosCuentaCorriente x
+                             Where x.NumeroCuenta = c.NumeroCuenta And x.FechaInicio <= P_Fecha );
+
+ Cursor Integra Is
+  Select b.cip, b.nombrecompleto
+    From datosintegrantes a, persona b
+   Where a.personaintegrante = b.codigopersona
+     And a.numerocuenta = P_NumeroCuenta;
+
+ file   TEXT_IO.FILE_TYPE;
+ line   VARCHAR2(180);
+
+ cR Recibo%RowType;
+ cI Integra%RowType;
+ 
+ vRutaReportes Varchar2(30);
+ vReporte Varchar2(200);
+ vServer Varchar2(20);
+ vMonto Varchar2(100);
+ vFecha Varchar2(100);
+
+Begin
+ Open Recibo;
+ Loop
+    Fetch Recibo Into cR;
+    Exit When Recibo%NotFound; 
+  
+    vRutaReportes := 'c:\tempreport\';
+    vReporte := lower(user)||To_Char(Sysdate,'yyyymmddhhmiss')||'.rrpt';
+    file := TEXT_IO.FOPEN(vRutaReportes || vReporte, 'w');
+ 
+    CON07060(cR.MontoInicial, cR.Moneda, vMonto);
+
+    select tbldescri into vFecha from syst900 where tblcodtab = 48 and tblcodarg = to_number(to_char(p_fecha,'mm'));
+    vFecha := to_char(p_fecha, 'dd')||' de '||vFecha||' de '||to_char(p_fecha,'yyyy');
+
+    line := GEN05060('L35');
+    IM_Enter(file,line);
+    line := chr(27)||chr(77);
+    IM_Enter(file,line);
+    IM_Enter(file,' ');
+    IM_Enter(file,' ');
+    If cR.Moneda = 1 then
+ 	     line := '                   CERTIFICADO DE DEPOSITO EN MONEDA NACIONAL';
+    Else
+ 	     line := '                  CERTIFICADO DE DEPOSITO EN MONEDA EXTRANJERA';
+    End if;
+    IM_Enter(file,GEN05060('B')||line||GEN05060('Boff'));
+    IM_Enter(file,' ');
+    IM_Enter(file,' ');
+    line := '      '||'Certificado No.      : '||Ltrim(Rtrim(cR.Cuenta));
+    IM_Enter(file,line);
+    line := '      '||'A nombre de          : Socio No. '||Lpad(cR.Cip, 7, 0)||' '||cR.NombreCompleto;
+    IM_Enter(file,line);
+
+    Open Integra;
+    Loop
+     Fetch Integra Into cI;
+     Exit When Integra%NotFound;
+      line := '      '||'                 Y/O   Socio No. '||Lpad(cI.Cip, 7, 0)||' '||cI.NombreCompleto;
+      IM_Enter(file,line);
+    End Loop;
+    Close Integra;
+
+    line := '      '||'Tiempo Acordado      : '||Lpad(Rtrim(Ltrim(To_Char(cR.NumeroDias, '9990'))), 4, '*')||' DIAS';
+    IM_Enter(file,line);
+    line := '      '||'Fecha de Inicio      : '||To_Char(cR.FechaInicio, 'dd/mm/yyyy');
+    IM_Enter(file,line);
+    line := '      '||'Fecha de Vencimiento : '||To_Char(cR.FechaVencimiento, 'dd/mm/yyyy');
+    IM_Enter(file,line);
+    line := '      '||'Tasa Efectiva Anual  : '||Rtrim(Ltrim(To_Char(cR.TasaInteres, '999,990.00')))||'%';
+    IM_Enter(file,line);
+    line := '      '||'Monto a depositar    : '||cR.vMoneda||' '||Lpad(Rtrim(Ltrim(To_Char(cR.MontoInicial,'999,999,999,990.00'))), 20, '*');
+    IM_Enter(file,line);
+    IM_Enter(file,' ');
+    line := '            '||'SON : '||Substr(Rpad(Upper(vMonto), 156, '-'),1,78);
+    IM_Enter(file,line);
+    line := '            '||'      '||Substr(Rpad(Upper(vMonto), 156, '-'),79,78);
+    IM_Enter(file,line);
+    IM_Enter(file,' ');
+    IM_Enter(file,' ');
+    IM_Enter(file,' ');
+    line := '      '||'Lima, '||vFecha;
+    IM_Enter(file,line);
+    IM_Enter(file,' ');
+    IM_Enter(file,' ');
+    line := '      '||'--------------------';
+    IM_Enter(file,line);
+    line := '      '||'    FUNCIONARIO';
+    IM_Enter(file,line);
+    IM_Enter(file,' ');
+    
+    TEXT_IO.FCLOSE(file);
+    
+    Select tbldescri into vServer from syst900 where tblcodtab = 50 and tblcodarg = 3;
+    If Get_Application_Property(USER_INTERFACE) = 'WEB' Then
+    	 Web.Show_Document('http://'||vServer||'/reportes/'||vReporte, '_blank');
+    	 Web.Show_Document('http://'||vServer||'/reportes/'||vReporte, '_blank');
+    Else
+    	 Host(vRutaReportes||vReporte);
+    	 Host(vRutaReportes||vReporte);
+    End If;
+ End Loop;
+ Close Recibo;  
+Exception When Others Then TEXT_IO.FCLOSE(file);
+End;
