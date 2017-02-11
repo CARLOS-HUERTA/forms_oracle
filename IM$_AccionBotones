@@ -1,0 +1,51 @@
+Procedure IM$_AccionBotones Is
+ Accion varchar2(80);
+ 
+ Function Muestra(nombreboton varchar2) Return BOOLEAN Is
+ Begin
+    If Not Id_Null(Find_Item(NombreBoton)) Then
+       Set_Item_Property(NombreBoton, Displayed, Property_True);
+       Set_Item_Property(NombreBoton, Enabled, Property_True);
+       Return True;
+    Else
+       Return False;
+    End If;
+    Return Null;
+ End;
+
+ Procedure Esconde(nombreboton varchar2) Is
+ Begin
+    If Not Id_Null(Find_Item(NombreBoton)) Then
+       Set_Item_Property(NombreBoton, Displayed, Property_False);
+    End If;    
+ End;
+
+Begin
+  Accion := Get_Item_Property(NAME_IN('SYSTEM.TRIGGER_ITEM'),ITEM_NAME);
+  
+  If Accion = 'ENTER_QUERY' Then
+    If Muestra('EXECUTE_QUERY') and Muestra('CANCEL_QUERY') Then
+        Esconde('ENTER_QUERY');
+    End If;    
+  End If;
+  
+  If Accion In ('EXIT_FORM', 'EXIT', 'QUIT') Then
+     Accion := 'EXIT_FORM';
+     If NAME_IN('SYSTEM.MODE') = 'ENTER-QUERY' Then
+        Do_Key('EXIT_FORM');
+     End If;
+  End If;
+  
+  If Accion = 'CANCEL_QUERY' Then
+     Accion := 'EXIT_FORM';
+  End If;
+  
+  Do_Key(Accion);
+  
+  If NAME_IN('SYSTEM.MODE') != 'ENTER-QUERY' Then
+     If Muestra('ENTER_QUERY') Then
+        Esconde('EXECUTE_QUERY');
+        Esconde('CANCEL_QUERY');
+     End If;
+  End If;
+End;
